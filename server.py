@@ -7,7 +7,7 @@ class Server:
         self.host_ip = host_ip
         self.host_port = host_port
         self.bufsize = 1024
-        self.connections = []
+        self.connections = {}
         self.lock = threading.Lock()
 
     def start_thread(self):
@@ -19,17 +19,14 @@ class Server:
         while True:
             c_soc, c_ipaddr = soc.accept()
             print(f"Accepted connection from {c_ipaddr[0]}:{c_ipaddr[1]}")
-            
-            self.lock.acquire()
-            self.connections.append(c_soc)
-            self.lock.release()
 
             handle_thread = threading.Thread(target=self.handle_client,
                                              args=(c_soc, c_ipaddr), daemon=True)
             handle_thread.start()
 
     def handle_client(self, c_soc, c_ipaddr):
-        self.notify_connection(c_soc, c_ipaddr)
+        self.ask_username(c_soc)
+        self.notify_connection(c_soc)
 
         while True:
             try:
@@ -39,18 +36,30 @@ class Server:
                     c_soc.close()
                     self.remove_connection(c_soc)
                     break
-                self.broadcast(c_soc, c_ipaddr, msg)
+                self.broadcast(c_soc, msg)
             except socket.error as e:
                 print(f"Failed to receive a message.\nError: {e}")
                 c_soc.close()
                 self.remove_connection(c_soc)
                 break
 
-    def notify_connection(self, new_conn, new_ipaddr):
+    def ask_username(self, new_conn):
+        try:
+            new_conn.send(b"Please enter your username.")
+            usr = new_conn.recv(self.bufsize).decode()
+        except socket.error as e:
+            (f"Failed to receive a message.\nError: {e}")
+            print(new_conn)
+
         self.lock.acquire()
-        for conn in self.connections:
+        self.connections[new_conn] = usr
+        self.lock.release()
+
+    def notify_connection(self, new_conn):
+        self.lock.acquire()
+        for conn in self.connections.keys():
             try:
-                msg = f"{new_ipaddr[0]}:{new_ipaddr[1]} joined."
+                msg = f"{self.connections[new_conn]} joined."
                 conn.send(msg.encode())
             except socket.error as e:
                 print("Faile to broadcast message.\nError: {e}")
@@ -58,12 +67,12 @@ class Server:
                 conn.close()
         self.lock.release()
 
-    def broadcast(self, sender, sender_ipaddr, msg):
+    def broadcast(self, sender, msg):
         self.lock.acquire()
-        for conn in self.connections:
+        for conn in self.connections.keys():
             if conn != sender:
                 try:
-                    data = f"{sender_ipaddr[0]}:{sender_ipaddr[1]} >>" + msg
+                    data = f"{self.connections[sender]} >> " + msg
                     conn.send(data.encode())
                 except socket.error as e:
                     print("Faile to broadcast message.\nError: {e}")
@@ -74,8 +83,8 @@ class Server:
 
     def remove_connection(self, conn):
         self.lock.acquire()
-        if conn in self.connections:
-            self.connections.remove(conn)
+        if conn in self.connections.values():
+            self.connections.pop(conn)
         self.lock.release()
 
 

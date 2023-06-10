@@ -71,9 +71,8 @@ class Server:
         self.lock.acquire()
         for conn in self.connections.keys():
             if conn != sender:
-                print(conn)
                 try:
-                    data = f"{self.connections[conn]} >> " + msg
+                    data = f"{self.connections[sender]} >> " + msg
                     conn.send(data.encode())
                 except socket.error as e:
                     print("Faile to broadcast message.\nError: {e}")

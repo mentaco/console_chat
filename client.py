@@ -14,7 +14,6 @@ class Client:
         input_h = 3
         content_win = curses.newwin(height-input_h, width, 0, 0)
         input_win = curses.newwin(input_h, width, height-input_h-1, 0)
-
         content_win.addstr("[Chat room]\n")
 
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -62,16 +61,20 @@ class Client:
             input_win.move(1, 5)
             msg = input_win.getstr().decode()
 
-            try:
-                if msg == "exit":
+            if msg:
+                content_win.addstr(f">> {msg}\n")
+                content_win.refresh()
+
+                try:
+                    if msg == "exit":
+                        soc.send(msg.encode())
+                        soc.close()
+                        break
                     soc.send(msg.encode())
+                except socket.error as e:
+                    content_win.addstr(f"Failed to send a message.\nError: {e}")
                     soc.close()
                     break
-                soc.send(msg.encode())
-            except socket.error as e:
-                content_win.addstr(f"Failed to send a message.\nError: {e}")
-                soc.close()
-                break
 
 
 if __name__ == '__main__':

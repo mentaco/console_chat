@@ -92,7 +92,7 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"Usage: python3 {sys.argv[0]} <host port>\n")
     else:
-        host_ip = "127.0.0.1"
+        host_ip = "0.0.0.0"
         host_port = int(sys.argv[1])
         
         server = Server(host_ip, host_port)

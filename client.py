@@ -78,11 +78,11 @@ class Client:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        stdscr.addstr(f"Usage: python3 {sys.argv[0]} <server port>\n")
+    if len(sys.argv) != 3:
+        stdscr.addstr(f"Usage: python3 {sys.argv[0]} <server ip>  <server port>\n")
     else:
-        s_ipaddr = "127.0.0.1"
-        s_port = int(sys.argv[1])
+        s_ipaddr = sys.argv[1]
+        s_port = int(sys.argv[2])
 
         client = Client(s_ipaddr, s_port)
         curses.wrapper(client.start_chat)

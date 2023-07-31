@@ -32,9 +32,9 @@ class Server:
             try:
                 msg = c_soc.recv(self.bufsize).decode()
                 if msg == "exit":
-                    print(f"{c_ipaddr[0]}:{c_ipaddr[1]} exited.")
-                    c_soc.close()
+                    print(f"{c_ipaddr[0]}:{c_ipaddr[1]} disconnected.")
                     self.remove_connection(c_soc)
+                    c_soc.close()
                     break
                 self.broadcast(c_soc, msg)
             except socket.error as e:
@@ -81,10 +81,17 @@ class Server:
                     self.remove_connection(conn)
         self.lock.release()
 
-    def remove_connection(self, conn):
+    def remove_connection(self, del_conn):
         self.lock.acquire()
-        if conn in self.connections.values():
-            self.connections.pop(conn)
+        for conn in self.connections.keys():
+            try:
+                msg = f"{self.connections[del_conn]} left the chat."
+                conn.send(msg.encode())
+            except socket.error as e:
+                print("Faile to broadcast message.\nError: {e}")
+                print(conn)
+                conn.close()
+        self.connections.pop(del_conn)
         self.lock.release()
 
 
